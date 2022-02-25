@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    stackYaml: ./stack.yaml
+    components:
+      - path: "./glass-core/src"
+        component: "glass-core:lib"
+      - path: "./glass-core/test"
+        component: "glass-core:test:glass-core-doctest"

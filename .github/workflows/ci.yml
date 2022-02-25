@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  pull_request:
+    types:
+    - synchronize
+    - opened
+    - reopened
+  push:
+    branches:
+    - main
+
+jobs:
+  cabal-build:
+    name: cabal / ghc ${{ matrix.ghc }} @ ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+        cabal: ['3.6.2.0']
+        ghc:
+          - '8.2.2'
+          - '8.4.4'
+          - '8.6.5'
+          - '8.10.7'
+          - '9.0.1'
+        exclude:
+          - os: macOS-latest
+            ghc: 9.0.1
+          - os: macOS-latest
+            ghc: 8.8.4
+          - os: macOS-latest
+            ghc: 8.6.5
+          - os: macOS-latest
+            ghc: 8.4.4
+          - os: macOS-latest
+            ghc: 8.2.2
+
+          - os: windows-latest
+            ghc: 9.0.1
+          - os: windows-latest
+            ghc: 8.8.4
+          - os: windows-latest
+            ghc: 8.6.5
+          - os: windows-latest
+            ghc: 8.4.4
+          - os: windows-latest
+            ghc: 8.2.2
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+
+      - name: Set up build environment
+        id: cabal-setup
+        uses: haskell/actions/setup@v1
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal}}
+      
+      - name: Configure build
+        run: |
+          cabal configure --enable-tests --enable-documentation --test-show-details=direct --write-ghc-environment=always
+      
+      - name: Freeze dependencies
+        run: |
+          cabal freeze
+
+      - name: Cache ~/.cabal/store
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.cabal-setup.outputs.cabal-store }}
+          key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-cabal-${{ hashFiles('cabal.project.freeze') }}
+      
+      - name: Install dependencies
+        run: |
+          cabal build all --only-dependencies
+
+      - name: Build project
+        run: |
+          cabal build all
+
+      - name: Run test suites
+        run: |
+          cabal test all
+
+      - name: Generate documentation
+        run: |
+          cabal haddock all
+
+  stack-build:
+    name: stack / ghc ${{ matrix.ghc }} @ ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        stack: ['2.7.3']
+        ghc: 
+          - '8.10.7'
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+
+      - name: Set up build environment
+        id: cabal-setup
+        uses: haskell/actions/setup@v1
+        with:
+          enable-stack: true
+          ghc-version: ${{ matrix.ghc }}
+          stack-version: ${{ matrix.stack }}
+
+      - name: Get Stack root
+        run: |
+          echo "STACK_ROOT=$(stack path --stack-root)" >> $GITHUB_ENV
+
+      - name: Cache ~/.stack
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: ${{ runner.os }}-ghc-${{ matrix.ghc }}-stack
+
+      - name: Install dependencies
+        run: |
+          stack build --system-ghc --test --no-run-tests --only-dependencies
+
+      - name: Build project
+        run: |
+          stack build --system-ghc --test --no-run-tests
+
+      - name: Run test suites
+        run: |
+          stack test --system-ghc

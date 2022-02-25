@@ -1,0 +1,16 @@
+version: 0.4.3.0
+run-mode: replace
+
+source-paths:
+- ./glass-core/src
+
+excluded-paths: []
+exclude-ignored-paths: false
+
+template-paths:
+- .github/headroom-templates
+
+variables:
+  author: 'Konrad Kleczkowski'
+  email: 'konrad.kleczkowski@gmail.com'
+  year: '2022'

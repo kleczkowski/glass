@@ -1,0 +1,6 @@
+resolver: lts-18.26
+
+packages:
+- glass-core
+
+compiler: ghc-8.10.7

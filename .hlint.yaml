@@ -1,0 +1,5 @@
+arguments:
+- "-XConstraintKinds"
+- "-XRankNTypes"
+- "-XScopedTypeVariables"
+- "-XTypeApplications"
